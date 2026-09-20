@@ -67,6 +67,8 @@ void Tormentor::make_save(size_t l) {
 
 bool Tormentor::next_pos(Labour l) {
 
+  size_t sl = l;
+  bool res = true;
   while (l != MAX) {
     size_t m = parts[1][l].edges.size();
     size_t wt = trans_pos[l];
@@ -93,15 +95,17 @@ bool Tormentor::next_pos(Labour l) {
       trans_pos[l] = wt;
     }
 
-    if (wt == saved_pos[l]) {
+
+    // Recalculate finish and result only on the starting labour
+    if (sl == l && wt == saved_pos[l]) {
       finished = l == labours() - 1;
-      return false;
+      res = false;
     }
 
-    l = old_l; // Here l == MAX || l <= pl
+    l = l == old_l ? MAX : old_l; // Here l == MAX || l <= pl
   }
 
-  return true;
+  return res;
 }
 
 void Tormentor::init() {
@@ -134,6 +138,7 @@ inline bool check_edge_odd(size_t adj, size_t next) {
 bool Tormentor::update_distances() {
   bool last_layer = false;
   queue<Vertex*> q;
+  bool updated = false;
 
   auto is_free = [&](Vertex& v) -> bool {
     return pos[v.dist % 2][v.index] == MAX;
@@ -173,6 +178,7 @@ bool Tormentor::update_distances() {
       // visited from the LESS layers
       if (next.dist >= dist_next && check(adj, next.index)) {
         next.dist = dist_next;
+        updated = true;
         // If free, stop on the current layer. Otherwise, go next
         if (is_free(next)) last_layer = true;
         else if (!last_layer) q.push(&next);
@@ -180,7 +186,7 @@ bool Tormentor::update_distances() {
     }
   }
 
-  return true;
+  return updated;
 }
 
 void Tormentor::xor_cardinality() {

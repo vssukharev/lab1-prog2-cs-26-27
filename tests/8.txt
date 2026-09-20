@@ -1,0 +1,8 @@
+
+3 2
+
+0 0 1
+
+# --- Expected output ---
+# Not all labours can be covered by workers
+

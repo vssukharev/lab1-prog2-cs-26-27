@@ -26,11 +26,13 @@ path parse_command_args(int argc, const char** argv) {
 
 void process(istream& is) {
   Tormentor torm = read_tormentor(is);
-  
+  Torture t;
+
   size_t i = 1;
   while (torm) {
+    t = torm();
     cout << "Iteration " << i << ":\n";
-    cout << torm();
+    cout << t;
     cout << '\n';
     ++i;
   }
