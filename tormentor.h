@@ -23,7 +23,10 @@ private:
 
   std::vector<Vertex> parts[2];    // 0 - workers, 1 - labours, bipartile graph
   std::vector<std::size_t> pos[2]; // current cardinality
-  std::vector<Worker> saved_pos;   // saved positions of labours
+  std::vector<std::size_t> trans_pos;   // translated positions of labours, 
+                                        // meaning that each value if trans_pos[l]
+                                        // is the index of a worker in l's adj list
+  std::vector<std::size_t> saved_pos;   // saved positions of labours from trans_pos
 
   bool initialized = false;
   bool finished = false;
@@ -33,23 +36,28 @@ private:
   **/
   void update();
 
-  std::size_t get_pos_adj(std::size_t part, std::size_t i) { 
-    return parts[part][pos[part][i]]; 
-  }
-
   /*
    Next position of labour i. While moving, it finds
    the closest free position, which is set by labour
    j < i. If in the result i is on the saved position,
    returns false. Otherwise, recalculates positions
-   j < i and returns true.
+   j < i and returns true. With helpers below.
   **/
   bool next_pos(Labour i);
+  // Adjacent in parts
+  inline size_t adjl_wt(Labour l, size_t wt) { return parts[1][l].edges[wt]; }
+  inline size_t adjw_wt(Labour l, size_t wt) { 
+    return parts[0][adjl_wt(l, wt)].index; 
+  }
+  // Adjacent in cardinality
+  inline size_t& adjl_pos(Labour l) { return pos[1][l]; }
+  inline size_t& adjw_pos(Worker w) { return pos[0][w]; }
 
   /*
-   Make fast copy of pos[1] into saved_pos
+   Make copy of current position into saved_pos with the labels
+   of index < l.
   **/
-  void make_save();
+  void make_save(size_t l);
 
   /*
    Initializes the graph via Hopcroft-Karp algorithm with helpers.

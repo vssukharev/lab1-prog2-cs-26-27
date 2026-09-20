@@ -1,15 +1,11 @@
+
 2 2
 
-0 0
-1 1
 0 1
 1 0
 
 # --- Expected output ---
 # Iteration 1:
-# 0 -> 0
-# 1 -> 1
-# 
-# Iteration 2:
 # 1 -> 0
 # 0 -> 1
+

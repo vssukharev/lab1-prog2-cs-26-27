@@ -5,6 +5,7 @@
 #include <stack>
 #include <functional>
 #include <cstring>
+#include <algorithm>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ Tormentor::Tormentor(size_t nw, size_t nl)
   : parts{vector<Vertex>(nw), vector<Vertex>(nl)} 
   , pos{vector<size_t>(nw, MAX), vector<size_t>(nl, MAX)}
   , saved_pos(nl, MAX)
+  , trans_pos(nl, MAX)
 {
   if (nw < nl) throw runtime_error{"Labours can't be more than workers"};
 }
@@ -31,7 +33,7 @@ Torture Tormentor::operator()() {
     initialized = true;
   }
   Torture res = dump();
-  // update();
+  update();
   return res;
 }
 
@@ -43,38 +45,78 @@ Torture Tormentor::dump() {
   size_t n = labours();
   Torture res(n);
   for (size_t l = 0; l < n; ++l) {
-    size_t w = get_pos_adj(l);
-    if (w == MAX) {
+    if (pos[1][l] == MAX) {
       throw runtime_error{"Not all labours can be covered by workers"};
-    }
-    res[l] = {w, l};
+    } 
+    res[l] = {pos[1][l], l};
   }
   return res;
 }
 
-// void Tormentor::update() {
-//   Labour i = 0;
-//   while (!finished && !next_pos(i)) ++i;
-//   make_save();
-// }
-//
-// void Tormentor::make_save() {
-//   memcpy(saved_pos.data(), pos[1].data(), saved_pos.size()*sizeof(Worker));
-// }
-//
-// bool next_pos(Labour i) {
-//   size_t m = pos[0].size() - 1;
-//   const auto& adj = parts[1];
-//
-//   size_t k = pos[1][i];
-//   for (size_t w : parts[1][i].edges) {
-//
-//   }
-// }
+void Tormentor::update() {
+  Labour l = 0;
+  while (!finished && !next_pos(l)) ++l;
+  make_save(l);
+}
+
+void Tormentor::make_save(size_t l) {
+  for (size_t i = 0; i < l; ++i) {
+    saved_pos[i] = trans_pos[i];
+  }
+}
+
+bool Tormentor::next_pos(Labour l) {
+
+  while (l != MAX) {
+    size_t m = parts[1][l].edges.size();
+    size_t wt = trans_pos[l];
+    size_t& w = adjl_pos(l);
+    size_t wn;
+
+    // Find the nearest work
+    do {
+      ++wt %= m;
+      wn = adjl_wt(l, wt);
+    } while (adjw_pos(wn) != MAX  // Stop on free
+          && adjw_pos(wn) > l     // Continue on higher than l
+          && wt != saved_pos[l]); // Finish at saved position
+
+    // Destroy old edge
+    if (trans_pos[l] != wt && adjw_pos(w) == l) adjw_pos(w) = MAX;
+
+    // Create new edge
+    size_t old_l = adjw_pos(wn);
+    w = wn; 
+    adjw_pos(wn) = l;
+    trans_pos[l] = wt;
+      
+    if (wt == saved_pos[l]) {
+      finished = l == labours() - 1;
+      return false;
+    }
+
+    l = old_l; // Here l == MAX || l <= pl
+  }
+
+  return true;
+}
 
 void Tormentor::init() {
   while (update_distances()) xor_cardinality();
-  saved_pos = pos[1];
+
+  // Sort adj lists of labours, initialize trans_pos and saved_pos
+  for (size_t l = 0; l < trans_pos.size(); ++l) {
+    auto& adj_list = parts[1][l].edges;
+
+    sort(adj_list.begin(), adj_list.end());
+
+    size_t w  = pos[1][l];
+    size_t wt = lower_bound(adj_list.begin(), adj_list.end(), w)
+              - adj_list.begin();
+
+    trans_pos[l] = wt;
+    saved_pos[l] = wt;
+  }
 }
 
 // --- Helpers for BFS update_distances
@@ -115,7 +157,7 @@ bool Tormentor::update_distances() {
     q.pop();
 
     int part = cur.dist % 2;
-    size_t adj = get_pos_adj(part, cur.index);
+    size_t adj = pos[part][cur.index];
 
     // Look for free edges if part == 0. Otherwise, look for the used ones
     auto check = part == 0 ? &check_edge_even : &check_edge_odd;

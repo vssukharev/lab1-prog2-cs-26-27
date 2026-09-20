@@ -19,7 +19,7 @@ private:
   int w;
   int l;
 
-  bool isspace() const;
+  bool skip() const;
   void parse_line();
 
 public:
@@ -29,7 +29,7 @@ public:
 Tormentor TormentorParser::parse(istream& is) {
   // Retrive number of workers and labours
   getline(is, line);
-  while (isspace()) { getline(is, line); }
+  while (skip()) { getline(is, line); }
   iss.clear();
   iss.str(line);
   
@@ -52,15 +52,14 @@ Tormentor TormentorParser::parse(istream& is) {
   return std::move(res);
 }
 
-bool TormentorParser::isspace() const {
-  for (char c : line) {
-    if (!std::isspace(c)) return false;
-  }
+bool TormentorParser::skip() const {
+  if (line.starts_with('#')) return true;
+  for (char c : line) if (!std::isspace(c)) return false;
   return true;
 }
 
 void TormentorParser::parse_line() {
-  if (isspace()) return;
+  if (skip()) return;
 
   iss.clear();
   iss.str(line);
