@@ -1,11 +1,11 @@
 
-#include "tormentor.h"
 #include <iostream>
 #include <queue>
 #include <stack>
 #include <functional>
-#include <cstring>
 #include <algorithm>
+
+#include "tormentor.h"
 
 using namespace std;
 
@@ -81,15 +81,18 @@ bool Tormentor::next_pos(Labour l) {
           && adjw_pos(wn) > l     // Continue on higher than l
           && wt != saved_pos[l]); // Finish at saved position
 
-    // Destroy old edge
-    if (trans_pos[l] != wt && adjw_pos(w) == l) adjw_pos(w) = MAX;
-
-    // Create new edge
     size_t old_l = adjw_pos(wn);
-    w = wn; 
-    adjw_pos(wn) = l;
-    trans_pos[l] = wt;
-      
+    if (trans_pos[l] != wt) {
+      // Destroy old edge
+      if (adjw_pos(w) == l) {
+        adjw_pos(w) = MAX;
+      }
+      // Create new edge
+      w = wn; 
+      adjw_pos(wn) = l;
+      trans_pos[l] = wt;
+    }
+
     if (wt == saved_pos[l]) {
       finished = l == labours() - 1;
       return false;
@@ -120,17 +123,16 @@ void Tormentor::init() {
 }
 
 // --- Helpers for BFS update_distances
-static bool check_edge_even(size_t adj, size_t next) { 
+inline bool check_edge_even(size_t adj, size_t next) { 
   return adj != next; 
 }
 
-static bool check_edge_odd(size_t adj, size_t next) { 
+inline bool check_edge_odd(size_t adj, size_t next) { 
   return adj == next; 
 }
 
 bool Tormentor::update_distances() {
   bool last_layer = false;
-  bool updated = false;
   queue<Vertex*> q;
 
   auto is_free = [&](Vertex& v) -> bool {
@@ -147,10 +149,11 @@ bool Tormentor::update_distances() {
     }
   }
 
+  // Complete if all labours are filled 
+  if (labours() == workers() - q.size()) return false;
+
   // Reset distances for labours
-  for (auto& l : parts[1]) {
-    l.dist = MAX;
-  }
+  for (auto& l : parts[1]) l.dist = MAX;
 
   while (!q.empty()) {
     Vertex& cur = *q.front();
@@ -166,10 +169,9 @@ bool Tormentor::update_distances() {
       int dist_next = cur.dist + 1; 
       Vertex& next = parts[dist_next % 2][i_next];
 
-      // If next.dist < cur.dist + 1, the adjacent vertex is already
+      // If next.dist < dist_next, the adjacent vertex is already
       // visited from the LESS layers
       if (next.dist >= dist_next && check(adj, next.index)) {
-        updated = true;
         next.dist = dist_next;
         // If free, stop on the current layer. Otherwise, go next
         if (is_free(next)) last_layer = true;
@@ -178,7 +180,7 @@ bool Tormentor::update_distances() {
     }
   }
 
-  return updated;
+  return true;
 }
 
 void Tormentor::xor_cardinality() {
@@ -190,12 +192,15 @@ void Tormentor::xor_cardinality() {
   auto xor_edge = [&](Vertex& a, Vertex& b) {
     int ap = a.dist % 2;
     int bp = b.dist % 2;
-    if (pos[ap][a.index] == b.index) {
-      pos[ap][a.index] = MAX;
-      pos[bp][b.index] = MAX;
-    } else {
+    if (ap == 0) {
       pos[ap][a.index] = b.index;
       pos[bp][b.index] = a.index;
+    } else {
+      // Reset only in case it hasn't been already set by something else
+      size_t adja = pos[ap][a.index];
+      size_t adjb = pos[bp][b.index];
+      if (adjb == a.index) pos[bp][b.index] = MAX;
+      if (adja == b.index) pos[ap][a.index] = MAX;
     }
   };
 

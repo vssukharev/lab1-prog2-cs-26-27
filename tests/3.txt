@@ -5,4 +5,10 @@
 0 1
 1 0
 
+# --- Expected output ---
+# Iteration 1:
+# 1 -> 0
+# 0 -> 1
+
+
 

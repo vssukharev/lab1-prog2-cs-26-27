@@ -2,7 +2,11 @@
 
 Program project for FCNC CS "C++ Programming 2" course 2026/2027.
 
-## Build
+## Build and run
 
-## Examples
+```
+$ make
+$ ./build/main <path_to_file>
+```
+
 

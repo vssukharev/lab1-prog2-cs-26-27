@@ -46,9 +46,7 @@ private:
   bool next_pos(Labour i);
   // Adjacent in parts
   inline size_t adjl_wt(Labour l, size_t wt) { return parts[1][l].edges[wt]; }
-  inline size_t adjw_wt(Labour l, size_t wt) { 
-    return parts[0][adjl_wt(l, wt)].index; 
-  }
+  inline size_t adjw_wt(Labour l, size_t wt) { return parts[0][adjl_wt(l, wt)].index; }
   // Adjacent in cardinality
   inline size_t& adjl_pos(Labour l) { return pos[1][l]; }
   inline size_t& adjw_pos(Worker w) { return pos[0][w]; }
@@ -61,7 +59,6 @@ private:
 
   /*
    Initializes the graph via Hopcroft-Karp algorithm with helpers.
-   TODO: error handling
   **/
   void init();
   void xor_cardinality();
